@@ -1,11 +1,17 @@
 {
-	"name": "kaboom-env",
+	"name": "kanim-editor",
+	"scripts": {
+		"build": "esbuild --bundle src/main.js --outfile=www/main.js --minify",
+		"dev": "esbuild --bundle src/main.js --outfile=www/main.js --servedir=www",
+		"zip": "npm run build && mkdir -p dist && zip -r dist/game.zip www -x \"**/.DS_Store\"",
+		"run:desktop": "npm run build && neu run",
+		"build:desktop": "npm run build && neu build --release"
+	},
 	"dependencies": {
-		"@replit/database": "^2.0.2",
-		"esbuild": "^0.15.10",
-		"express": "^4.18.1",
-		"kaboom": "^3000.0.0-beta.6",
-		"stacktrace-js": "^2.0.2",
-		"ws": "^8.2.0"
+		"kaboom": "^3000.0.0-beta.6"
+	},
+	"devDependencies": {
+		"@neutralinojs/neu": "^9.5.1",
+		"esbuild": "^0.17.19"
 	}
 }

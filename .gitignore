@@ -1,2 +1,4 @@
-node_modules
+node_modules/
+www/main.js
 dist/
+bin/

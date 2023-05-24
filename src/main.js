@@ -1,4 +1,5 @@
 import kaboom from "kaboom";
+import "kaboom";
 import { addUIBox } from "./uistuff";
 
 const k = kaboom({
@@ -7,7 +8,7 @@ const k = kaboom({
 });
 
 k.loadSprite("bean", "sprites/bean.png");
-k.loadSprite("playbutton", "./sprites/playbutton.png");
+k.loadSprite("playbutton", "sprites/playbutton.png");
 
 let curDraggin = null
 

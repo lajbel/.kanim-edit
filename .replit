@@ -1,5 +1,4 @@
-run = "node run.js"
-entrypoint = "code/main.js"
+run = "npm run dev"
 
 hidden = [
 	".config",
