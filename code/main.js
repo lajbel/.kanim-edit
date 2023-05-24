@@ -109,7 +109,7 @@ scene("editor", (initialProps, animProps) => {
         }
     }
 
-    const animationOptions = addUIBox(400, 230, vec2(initialState.pos.add(250, 0)));
+    const animationOptions = addUIBox(400, 230, vec2(initialState.pos.add(260, 0)));
     animationOptions.setTitle("Animation Options");
     animationOptions.addCheckbox("auto repeat", false, (v) => { opts.autoRepeat = v });
     animationOptions.addOption("easings", [
@@ -290,7 +290,7 @@ scene("editor", (initialProps, animProps) => {
             animProps,
         }
 
-        downloadText(`${opts.name}.kbanim`, JSON.stringify(animData));
+        downloadText(`${opts.name}.kanim`, JSON.stringify(animData));
     }
 });
 
