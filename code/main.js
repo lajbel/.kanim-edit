@@ -1,14 +1,13 @@
 import kaboom from "kaboom";
-import "kaboom";
 import { addUIBox } from "./uistuff";
 
-kaboom({
+const k = kaboom({
     background: [230, 211, 211],
     logMax: 10,
 });
 
-loadSprite("bean", "sprites/bean.png");
-loadSprite("playbutton", "./sprites/playbutton.png");
+k.loadSprite("bean", "sprites/bean.png");
+k.loadSprite("playbutton", "./sprites/playbutton.png");
 
 let curDraggin = null
 
@@ -92,14 +91,13 @@ scene("editor", (initialProps, animProps) => {
     let animationTranscurredTime = 0;
     let tweenings = [];
 
-
-
     let currentProps = { ...initialProps }
 
     // UI Boxes
-    const initialState = addUIBox(230, height() - 20, vec2(10, 10));
+    const initialState = addUIBox(230, height() - 20, vec2(10, 10), "left");
+    const finishState = addUIBox(230, height() - 20, vec2(width() - 240, 10), "right");
+
     initialState.setTitle("Initial")
-    const finishState = addUIBox(230, height() - 20, vec2(width() - 240, 10));
     finishState.setTitle("Modify");
 
     for (const prop of props) {
@@ -109,14 +107,22 @@ scene("editor", (initialProps, animProps) => {
         }
     }
 
-    const animationOptions = addUIBox(400, 230, vec2(initialState.pos.add(260, 0)));
-    animationOptions.setTitle("Animation Options");
+    const animationOptions = addUIBox(400, 230, vec2(initialState.pos.add(260, 0)), "up");
+    animationOptions.setTitle("Settings");
     animationOptions.addCheckbox("auto repeat", false, (v) => { opts.autoRepeat = v });
     animationOptions.addOption("easings", [
         ...Object.keys(easings)
     ], "linear", (v) => { opts.easing = easings[v] });
     animationOptions.addEditableText("time", opts.animationTime, (v) => { opts.animationTime = v });
-    animationOptions.addEditableText("name", "example", (v) => { opts.name = v });
+    animationOptions.addEditableText("anim. name", "example", (v) => { opts.name = v });
+
+    const animations = addUIBox(280, 400, finishState.pos.sub(320, 0), "up");
+    animations.setTitle("Animations");
+
+    // Animation's Timeline
+    const timeline = addUIBox(width() - 570, 280, vec2(570 / 2, height() - 300), "down");
+
+
 
     // Play button
     const playButton = add([
@@ -187,7 +193,7 @@ scene("editor", (initialProps, animProps) => {
     ]);
 
     // Timeline
-    const timeline = add([
+    const animationBar = add([
         pos(0, height()),
         anchor("botleft"),
         fixed(),
@@ -245,7 +251,7 @@ scene("editor", (initialProps, animProps) => {
         }
 
         // buddySprite.use(anchor(toWorld(buddyOrigin.pos)));
-        timeline.use(rect(animationTranscurredTime * width(), 5))
+        animationBar.use(rect(animationTranscurredTime * width(), 5))
     });
 
     // animation controller

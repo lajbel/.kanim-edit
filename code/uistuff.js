@@ -12,7 +12,7 @@ function boxComp() {
             this.get("boxTitle")[0].text = t;
         },
 
-        hideY() {
+        toggleUp() {
             if (hidden) {
                 hidden = false;
                 tween(this.pos.y, initPos.y, 1, (v) => { this.pos.y = v }, easings.easeInOutBack)
@@ -23,7 +23,7 @@ function boxComp() {
             }
         },
 
-        hideXNegative() {
+        toggleLeft() {
             if (hidden) {
                 hidden = false;
                 tween(this.pos.x, initPos.x, 1, (v) => { this.pos.x = v }, easings.easeInOutBack)
@@ -34,7 +34,7 @@ function boxComp() {
             }
         },
 
-        hideXPositive() {
+        toggleRight() {
             if (hidden) {
                 hidden = false;
                 tween(this.pos.x, initPos.x, 1, (v) => { this.pos.x = v }, easings.easeInOutBack)
@@ -42,6 +42,17 @@ function boxComp() {
             else {
                 hidden = true;
                 tween(this.pos.x, width() - 10, 1, (v) => { this.pos.x = v }, easings.easeInOutBack)
+            }
+        },
+
+        toggleDown() {
+            if (hidden) {
+                hidden = false;
+                tween(this.pos.y, initPos.y, 1, (v) => { this.pos.y = v }, easings.easeInOutBack)
+            }
+            else {
+                hidden = true;
+                tween(this.pos.y, height() - 10, 1, (v) => { this.pos.y = v }, easings.easeInOutBack)
             }
         },
 
@@ -191,7 +202,7 @@ function boxComp() {
             });
         },
 
-        addOption(t, options, defaultValue, action) {
+        addOption(t, options, defaultValue, action, arrow) {
             let optionIndex = 0;
 
             const quote = this.add([
@@ -216,6 +227,7 @@ function boxComp() {
                     action,
                 }
             ]);
+
 
             const rightArrow = this.add([
                 pos(selected.pos.add(170, 0)),
@@ -265,8 +277,36 @@ function boxComp() {
     }
 }
 
-export function addUIBox(w, h, p) {
+export function addUIBox(w, h, p, arrow = "right") {
     let center = vec2(w / 2, h / 2);
+
+    let arrows = {
+        "right": {
+            icon: "˃",
+            pos: vec2(-14, center.y),
+            anchor: "center",
+            func: "toggleRight",
+        },
+        "left": {
+            icon: "˂",
+            pos: vec2(w + 14, center.y),
+            anchor: "center",
+            func: "toggleLeft",
+        },
+        "up": {
+            icon: "˄",
+            pos: vec2(center.x, h + 14),
+            anchor: vec2(0, -0.5),
+            func: "toggleUp",
+        },
+        "down": {
+            icon: "˅",
+            pos: vec2(center.x, -14),
+            anchor: vec2(0, -0.5),
+            func: "toggleDown",
+        },
+    }
+
 
     const box = add([
         pos(p),
@@ -281,64 +321,24 @@ export function addUIBox(w, h, p) {
         outline(4),
     ]);
 
-    const yArrow = box.add([
-        pos(center.x, h + 14),
+    const arrowObj = box.add([
+        pos(arrows[arrow].pos),
         rotate(0),
-        anchor(vec2(0, -0.5)),
-        text("˄"),
+        anchor(arrows[arrow].anchor),
+        text(arrows[arrow].icon),
         color(BLACK),
         area(),
         fixed(),
         {
             rot() {
-                tween(this.angle, this.angle + 180, 0.8, (v) => { this.angle = v }, easings.linear)
+                tween(this.angle, this.angle + 180, 0.5, (v) => { this.angle = v }, easings.easeInBack)
             }
         }
     ]);
 
-    yArrow.onClick(() => {
-        box.hideY();
-        yArrow.rot();
-    });
-
-    const xArrowNegative = box.add([
-        pos(w + 14, center.y),
-        rotate(0),
-        anchor(vec2(0, -0.5)),
-        text("˂"),
-        color(BLACK),
-        area(),
-        fixed(),
-        {
-            rot() {
-                tween(this.angle, this.angle + 180, 0.8, (v) => { this.angle = v }, easings.linear)
-            }
-        }
-    ]);
-
-    xArrowNegative.onClick(() => {
-        box.hideXNegative();
-        xArrowNegative.rot();
-    });
-
-    const xArrowPositive = box.add([
-        pos(-14, center.y),
-        rotate(0),
-        anchor(vec2(0, -0.5)),
-        text("˃"),
-        color(BLACK),
-        area(),
-        fixed(),
-        {
-            rot() {
-                tween(this.angle, this.angle + 180, 0.8, (v) => { this.angle = v }, easings.linear)
-            }
-        }
-    ]);
-
-    xArrowPositive.onClick(() => {
-        box.hideXPositive();
-        xArrowPositive.rot();
+    arrowObj.onClick(() => {
+        box[arrows[arrow].func]();
+        arrowObj.rot();
     });
 
     box.add([
