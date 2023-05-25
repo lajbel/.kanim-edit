@@ -80,14 +80,29 @@ let initialProps = {
     opacity: 1,
 }
 
-let animProps = {
+let finishProps = {
     scaleX: 2,
     scaleY: 2,
     rotation: 0,
     opacity: 1,
 }
 
-scene("editor", (initialProps, animProps) => {
+let project = {
+    "example": {
+        animations: {
+            "default": {
+                frames: [
+                    {
+                        initialProps: initialProps,
+                        finishProps: finishProps,
+                    }
+                ],
+            }
+        },
+    }
+}
+
+scene("editor", (initialProps, finishProps) => {
     let playing = false;
     let animationTranscurredTime = 0;
     let tweenings = [];
@@ -104,7 +119,7 @@ scene("editor", (initialProps, animProps) => {
     for (const prop of props) {
         if (prop.type == "editableNumber") {
             initialState.addEditableText(prop.name, initialProps[prop.name], (v) => { initialProps[prop.name] = Number(v) });
-            finishState.addEditableText(prop.name, animProps[prop.name], (v) => { animProps[prop.name] = Number(v) })
+            finishState.addEditableText(prop.name, finishProps[prop.name], (v) => { finishProps[prop.name] = Number(v) })
         }
     }
 
@@ -262,7 +277,7 @@ scene("editor", (initialProps, animProps) => {
         playing = true;
 
         for (const prop of props) {
-            const t = tween(initialProps[prop.name], animProps[prop.name], opts.animationTime, (v) => { currentProps[prop.name] = v }, opts.easing);
+            const t = tween(initialProps[prop.name], finishProps[prop.name], opts.animationTime, (v) => { currentProps[prop.name] = v }, opts.easing);
             tweenings.push(t);
         }
 
@@ -294,11 +309,11 @@ scene("editor", (initialProps, animProps) => {
     function saveAnimation() {
         let animData = {
             initialProps,
-            animProps,
+            finishProps,
         }
 
         downloadText(`${opts.name}.kanim`, JSON.stringify(animData));
     }
 });
 
-go("editor", initialProps, animProps);
+go("editor", initialProps, finishProps);
