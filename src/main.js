@@ -1,59 +1,51 @@
 import kaboom from "kaboom";
-import "kaboom";
+import "kaboom/global";
 import { addUIBox } from "./uistuff";
 
-const k = kaboom({
+kaboom({
     background: [230, 211, 211],
     logMax: 10,
 });
 
-k.loadSprite("bean", "sprites/bean.png");
-k.loadSprite("playbutton", "sprites/playbutton.png");
+loadSprite("bean", "sprites/bean.png");
+loadSprite("playbutton", "sprites/playbutton.png");
 
-let curDraggin = null
+let curDraggin = null;
 
-// A custom component for handling drag & drop behavior
 function drag() {
-    // The displacement between object pos and mouse pos
-    let offset = vec2(0)
+    let offset = vec2(0);
 
     return {
         id: "drag",
         require: ["pos", "area"],
         pick() {
-            curDraggin = this
-            offset = toScreen(mousePos().sub(this.pos))
-            this.trigger("drag")
+            curDraggin = this;
+            offset = toScreen(mousePos().sub(this.pos));
+            this.trigger("drag");
         },
 
         update() {
             if (curDraggin === this) {
-                this.pos = toScreen(mousePos().sub(offset))
-                this.trigger("dragUpdate")
+                this.pos = toScreen(mousePos().sub(offset));
+                this.trigger("dragUpdate");
             }
         },
         onDrag(action) {
-            return this.on("drag", action)
+            return this.on("drag", action);
         },
         onDragUpdate(action) {
-            return this.on("dragUpdate", action)
+            return this.on("dragUpdate", action);
         },
         onDragEnd(action) {
-            return this.on("dragEnd", action)
+            return this.on("dragEnd", action);
         },
-    }
-
+    };
 }
 
 const THEME_COLOR = rgb(120, 127, 255);
 
-let opts = {
-    name: "example",
-    autoRepeat: false,
-    easing: easings.linear,
-    animationTime: 1,
-}
-
+// #region Default Options
+// The animation's default options
 let props = [
     {
         name: "scaleX",
@@ -78,14 +70,21 @@ let initialProps = {
     scaleY: 1,
     rotation: 0,
     opacity: 1,
-}
+};
 
 let finishProps = {
     scaleX: 2,
     scaleY: 2,
     rotation: 0,
     opacity: 1,
-}
+};
+
+let settings = {
+    name: "example",
+    autoRepeat: false,
+    easing: easings.linear,
+    animationTime: 1,
+};
 
 let project = {
     "example": {
@@ -95,42 +94,50 @@ let project = {
                     {
                         initialProps: initialProps,
                         finishProps: finishProps,
+                        settings: settings,
                     }
                 ],
             }
         },
     }
-}
+};
+// #endregion
 
-scene("editor", (initialProps, finishProps) => {
-    let playing = false;
+let state = {
+    currentEditingAnim: "default",
+};
+
+scene("editor", (project) => {
+    let { initialProps, finishProps } = project["example"].animations["default"].frames[0];
+    let currentAnimation = project["example"].animations["default"];
+    let currentFrame = currentAnimation.frames[0];
+
     let animationTranscurredTime = 0;
     let tweenings = [];
 
-    let currentProps = { ...initialProps }
+    let isInPlay = false;
+    let playingProps = { ...initialProps };
 
-    // UI Boxes
+    // #region UI
     const initialState = addUIBox(230, height() - 20, vec2(10, 10), "left");
-    const finishState = addUIBox(230, height() - 20, vec2(width() - 240, 10), "right");
+    initialState.setTitle("Initial");
 
-    initialState.setTitle("Initial")
+    const finishState = addUIBox(230, height() - 20, vec2(width() - 240, 10), "right");
     finishState.setTitle("Modify");
 
     for (const prop of props) {
         if (prop.type == "editableNumber") {
-            initialState.addEditableText(prop.name, initialProps[prop.name], (v) => { initialProps[prop.name] = Number(v) });
-            finishState.addEditableText(prop.name, finishProps[prop.name], (v) => { finishProps[prop.name] = Number(v) })
+            initialState.addEditableText(prop.name, initialProps[prop.name], (v) => { initialProps[prop.name] = Number(v); });
+            finishState.addEditableText(prop.name, finishProps[prop.name], (v) => { finishProps[prop.name] = Number(v); });
         }
     }
 
     const animationOptions = addUIBox(400, 230, vec2(initialState.pos.add(260, 0)), "up");
     animationOptions.setTitle("Settings");
-    animationOptions.addCheckbox("auto repeat", false, (v) => { opts.autoRepeat = v });
-    animationOptions.addOption("easings", [
-        ...Object.keys(easings)
-    ], "linear", (v) => { opts.easing = easings[v] });
-    animationOptions.addEditableText("time", opts.animationTime, (v) => { opts.animationTime = v });
-    animationOptions.addEditableText("anim. name", "example", (v) => { opts.name = v });
+    animationOptions.addCheckbox("auto repeat", false, (v) => { settings.autoRepeat = v; });
+    animationOptions.addOption("easings", [...Object.keys(easings)], "linear", (v) => { settings.easing = easings[v]; });
+    animationOptions.addEditableText("time", settings.animationTime, (v) => { settings.animationTime = v; });
+    animationOptions.addEditableText("anim. name", "example", (v) => { settings.name = v; });
 
     const animations = addUIBox(280, 400, finishState.pos.sub(320, 0), "up");
     animations.setTitle("Animations");
@@ -138,6 +145,40 @@ scene("editor", (initialProps, finishProps) => {
     // Animation's Timeline
     const timeline = addUIBox(width() - 570, 280, vec2(570 / 2, height() - 300), "down");
 
+    for (let i = 0; i < currentAnimation.frames.length; i++) {
+        timeline.add([
+            pos(10 + 50 * get("timelineFrame").length, 40),
+            fixed(),
+            rect(50, 20),
+            color(THEME_COLOR),
+            outline(0),
+            area(),
+            "boxElement",
+            "timelineFrame",
+            {
+                selected: i == 0,
+
+                update() {
+                    if (this.selected) this.use(outline(2));
+                    else this.use(outline(0));
+                }
+            }
+        ]);
+    }
+
+    // add button
+    const addBtn = timeline.add([
+        pos(0),
+        fixed(),
+        text("+", { size: 34 }),
+        color(THEME_COLOR),
+        area(),
+    ]);
+
+    onUpdate(() => {
+        // put in in the front of the latest timeline frame
+        addBtn.pos = vec2(get("timelineFrame")[0]?.pos).add(50, 0);
+    });
 
 
     // Play button
@@ -148,14 +189,15 @@ scene("editor", (initialProps, finishProps) => {
         anchor("center"),
         area(),
     ]);
+    // #endregion
 
     playButton.onClick(() => {
-        if (playing) resetAnimation();
+        if (isInPlay) resetAnimation();
         else playAnimation();
     });
 
     playButton.onUpdate(() => {
-        if (playing) {
+        if (isInPlay) {
             playButton.unuse("sprite");
             playButton.use(rect(50, 50));
             playButton.use(outline(4));
@@ -217,75 +259,80 @@ scene("editor", (initialProps, finishProps) => {
         color(THEME_COLOR),
     ]);
 
-    // keys
-    onKeyDown("w", () => {
-        camScale(camScale().add(vec2(dt())));
-    });
-
-    onKeyDown("s", () => {
-        camScale(camScale().sub(vec2(dt())));
-    });
-
-    onKeyPress("tab", () => {
-        saveAnimation();
+    // #region Input
+    onKeyPress("s", () => {
+        if (isKeyDown("shift")) saveAnimation();
     });
 
     onKeyPress("space", () => {
-        if (playing) resetAnimation();
+        if (isInPlay) resetAnimation();
         else playAnimation();
     });
+
+    onScroll((scrollDt) => {
+        let multiplier = 2;
+        if (isKeyDown("shift")) multiplier = 4;
+
+        if (scrollDt.y < 0) {
+            camScale(camScale().add(vec2(dt() * multiplier)));
+        }
+        else {
+            camScale(camScale().sub(vec2(dt() * multiplier)));
+        }
+    });
+    // #endregion
 
     onMousePress(() => {
         if (curDraggin) return;
 
         for (const obj of get("drag", { recursive: true })) {
             if (obj.isHovering()) {
-                obj.pick()
-                break
+                obj.pick();
+                break;
             }
         }
-    })
+    });
 
     onMouseRelease(() => {
         if (curDraggin) {
-            curDraggin.trigger("dragEnd")
-            curDraggin = null
+            curDraggin.trigger("dragEnd");
+            curDraggin = null;
         }
-    })
+    });
 
     onUpdate(() => {
         // set props in sprite
-        if (playing) {
-            buddySprite.use(scale(currentProps.scaleX, currentProps.scaleY));
-            buddySprite.use(rotate(currentProps.rotation));
-            buddySprite.use(opacity(currentProps.opacity))
+        if (isInPlay) {
+            buddySprite.use(scale(playingProps.scaleX, playingProps.scaleY));
+            buddySprite.use(rotate(playingProps.rotation));
+            buddySprite.use(opacity(playingProps.opacity));
         }
         else {
             buddySprite.use(scale(initialProps.scaleX, initialProps.scaleY));
             buddySprite.use(rotate(initialProps.rotation));
-            buddySprite.use(opacity(initialProps.opacity))
+            buddySprite.use(opacity(initialProps.opacity));
         }
 
         // buddySprite.use(anchor(toWorld(buddyOrigin.pos)));
-        animationBar.use(rect(animationTranscurredTime * width(), 5))
+        animationBar.use(rect(animationTranscurredTime * width(), 5));
     });
 
     // animation controller
     function playAnimation() {
-        if (playing) return;
+        if (isInPlay) return;
 
-        playing = true;
+        isInPlay = true;
 
         for (const prop of props) {
-            const t = tween(initialProps[prop.name], finishProps[prop.name], opts.animationTime, (v) => { currentProps[prop.name] = v }, opts.easing);
+            const t = tween(initialProps[prop.name], finishProps[prop.name], settings.animationTime, (v) => { playingProps[prop.name] = v; }, settings.easing);
             tweenings.push(t);
         }
 
-        let t = tween(0, 1, opts.animationTime, (v) => { animationTranscurredTime = v }, easings.linear);
+        let t = tween(0, 1, settings.animationTime, (v) => { animationTranscurredTime = v; }, easings.linear);
         t.onEnd(() => {
-            playing = false;
+            isInPlay = false;
 
-            if (opts.autoRepeat) return playAnimation();
+            if (settings.autoRepeat) return playAnimation();
             else resetAnimation();
         });
 
@@ -293,16 +340,16 @@ scene("editor", (initialProps, finishProps) => {
     }
 
     function resetAnimation() {
-        playing = false;
+        isInPlay = false;
 
         for (const tween of tweenings) {
             tween.cancel();
         }
 
         tweenings = [];
-        currentProps.scaleX = initialProps.scaleX;
-        currentProps.scaleY = initialProps.scaleY;
-        currentProps.rotation = initialProps.rotation;
+        playingProps.scaleX = initialProps.scaleX;
+        playingProps.scaleY = initialProps.scaleY;
+        playingProps.rotation = initialProps.rotation;
         animationTranscurredTime = 0;
     }
 
@@ -310,10 +357,10 @@ scene("editor", (initialProps, finishProps) => {
         let animData = {
             initialProps,
             finishProps,
-        }
+        };
 
-        downloadText(`${opts.name}.kanim`, JSON.stringify(animData));
+        downloadText(`${settings.name}.kanim`, JSON.stringify(animData));
     }
 });
 
-go("editor", initialProps, finishProps);
+go("editor", project, initialProps, finishProps);

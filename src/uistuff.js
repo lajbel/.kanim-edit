@@ -15,47 +15,61 @@ function boxComp() {
         toggleUp() {
             if (hidden) {
                 hidden = false;
-                tween(this.pos.y, initPos.y, 1, (v) => { this.pos.y = v }, easings.easeInOutBack)
+                tween(this.pos.y, initPos.y, 1, (v) => { this.pos.y = v; }, easings.easeInOutBack);
             }
             else {
                 hidden = true;
-                tween(this.pos.y, -this.bg.height + 10, 1, (v) => { this.pos.y = v }, easings.easeInOutBack)
+                tween(this.pos.y, -this.bg.height + 10, 1, (v) => { this.pos.y = v; }, easings.easeInOutBack);
             }
         },
 
         toggleLeft() {
             if (hidden) {
                 hidden = false;
-                tween(this.pos.x, initPos.x, 1, (v) => { this.pos.x = v }, easings.easeInOutBack)
+                tween(this.pos.x, initPos.x, 1, (v) => { this.pos.x = v; }, easings.easeInOutBack);
             }
             else {
                 hidden = true;
-                tween(this.pos.x, -this.bg.width + 10, 1, (v) => { this.pos.x = v }, easings.easeInOutBack)
+                tween(this.pos.x, -this.bg.width + 10, 1, (v) => { this.pos.x = v; }, easings.easeInOutBack);
             }
         },
 
         toggleRight() {
             if (hidden) {
                 hidden = false;
-                tween(this.pos.x, initPos.x, 1, (v) => { this.pos.x = v }, easings.easeInOutBack)
+                tween(this.pos.x, initPos.x, 1, (v) => { this.pos.x = v; }, easings.easeInOutBack);
             }
             else {
                 hidden = true;
-                tween(this.pos.x, width() - 10, 1, (v) => { this.pos.x = v }, easings.easeInOutBack)
+                tween(this.pos.x, width() - 10, 1, (v) => { this.pos.x = v; }, easings.easeInOutBack);
             }
         },
 
         toggleDown() {
             if (hidden) {
                 hidden = false;
-                tween(this.pos.y, initPos.y, 1, (v) => { this.pos.y = v }, easings.easeInOutBack)
+                tween(this.pos.y, initPos.y, 1, (v) => { this.pos.y = v; }, easings.easeInOutBack);
             }
             else {
                 hidden = true;
-                tween(this.pos.y, height() - 10, 1, (v) => { this.pos.y = v }, easings.easeInOutBack)
+                tween(this.pos.y, height() - 10, 1, (v) => { this.pos.y = v; }, easings.easeInOutBack);
             }
         },
 
+        addElement(t, e) {
+            const quote = this.add([
+                pos(6, 50 + (24 * this.get("boxElement").length)),
+                anchor("left"),
+                fixed(),
+                text(t, { size: 20 }),
+                color(BLACK),
+                "boxElement",
+            ]);
+
+            const element = e();
+
+            return element;
+        },
 
         addEditableText(t, defaultValue, setter) {
             const quote = this.add([
@@ -130,7 +144,7 @@ function boxComp() {
             onKeyPressRepeat("backspace", () => {
                 if (!editableText.is("editingText")) return;
 
-                editableText.textValue.text = editableText.textValue.text.substring(0, editableText.textValue.text.length - 1)
+                editableText.textValue.text = editableText.textValue.text.substring(0, editableText.textValue.text.length - 1);
             });
         },
 
@@ -194,12 +208,18 @@ function boxComp() {
                     mark1.use(opacity(0));
                     mark2.use(opacity(0));
                 }
-            }
+            };
 
             checkbox.onClick(() => {
                 checkbox.setStatus(!checkbox.status);
                 checkbox.action(checkbox.status);
             });
+        },
+
+        addRadiusList(options, defaultValue, action) {
+            let selectedOption;
+
+
         },
 
         addOption(t, options, defaultValue, action, arrow) {
@@ -254,8 +274,8 @@ function boxComp() {
             ]);
 
             selected.setStatus = (v) => {
-                selected.status = v
-            }
+                selected.status = v;
+            };
 
             leftArrow.onClick(() => {
                 optionIndex = optionIndex - 1 % options.lenght;
@@ -264,7 +284,7 @@ function boxComp() {
             });
 
             rightArrow.onClick(() => {
-                optionIndex = optionIndex + 1 % options.length
+                optionIndex = optionIndex + 1 % options.length;
                 selected.text = options[optionIndex];
                 action(options[optionIndex]);
             });
@@ -274,7 +294,7 @@ function boxComp() {
             //     checkbox.action(checkbox.status);
             // });
         }
-    }
+    };
 }
 
 export function addUIBox(w, h, p, arrow = "right") {
@@ -305,7 +325,7 @@ export function addUIBox(w, h, p, arrow = "right") {
             anchor: vec2(0, -0.5),
             func: "toggleDown",
         },
-    }
+    };
 
 
     const box = add([
@@ -331,7 +351,7 @@ export function addUIBox(w, h, p, arrow = "right") {
         fixed(),
         {
             rot() {
-                tween(this.angle, this.angle + 180, 0.5, (v) => { this.angle = v }, easings.easeInBack)
+                tween(this.angle, this.angle + 180, 0.5, (v) => { this.angle = v; }, easings.easeInBack);
             }
         }
     ]);
