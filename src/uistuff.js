@@ -8,55 +8,25 @@ function boxComp() {
             initPos = this.pos.clone();
         },
 
-        setTitle(t) {
-            this.get("boxTitle")[0].text = t;
-        },
+        toggle(dir) {
+            let dirs = {
+                up: { xy: "y", v: 1, s: "height" },
+                down: { xy: "y", v: -1, s: "height" },
+                left: { xy: "x", v: 1, s: "width" },
+                right: { xy: "x", v: -1, s: "width" },
+            };
 
-        toggleUp() {
             if (hidden) {
-                hidden = false;
-                tween(this.pos.y, initPos.y, 1, (v) => { this.pos.y = v; }, easings.easeInOutBack);
+                tween(this.pos[dirs[dir].xy], initPos[dirs[dir].xy], 1, (v) => { this.pos[dirs[dir].xy] = v; }, easings.easeInOutBack);
             }
             else {
-                hidden = true;
-                tween(this.pos.y, -this.bg.height + 10, 1, (v) => { this.pos.y = v; }, easings.easeInOutBack);
+                tween(this.pos[dirs[dir].xy], dirs[dir].v < 0 ? window[dirs[dir].s]() - 10 : 0 - this.bg[dirs[dir].s], 1, (v) => { this.pos[dirs[dir].xy] = v; }, easings.easeInOutBack);
             }
+
+            hidden = !hidden;
         },
 
-        toggleLeft() {
-            if (hidden) {
-                hidden = false;
-                tween(this.pos.x, initPos.x, 1, (v) => { this.pos.x = v; }, easings.easeInOutBack);
-            }
-            else {
-                hidden = true;
-                tween(this.pos.x, -this.bg.width + 10, 1, (v) => { this.pos.x = v; }, easings.easeInOutBack);
-            }
-        },
-
-        toggleRight() {
-            if (hidden) {
-                hidden = false;
-                tween(this.pos.x, initPos.x, 1, (v) => { this.pos.x = v; }, easings.easeInOutBack);
-            }
-            else {
-                hidden = true;
-                tween(this.pos.x, width() - 10, 1, (v) => { this.pos.x = v; }, easings.easeInOutBack);
-            }
-        },
-
-        toggleDown() {
-            if (hidden) {
-                hidden = false;
-                tween(this.pos.y, initPos.y, 1, (v) => { this.pos.y = v; }, easings.easeInOutBack);
-            }
-            else {
-                hidden = true;
-                tween(this.pos.y, height() - 10, 1, (v) => { this.pos.y = v; }, easings.easeInOutBack);
-            }
-        },
-
-        addElement(t, e) {
+        addQuote(t) {
             const quote = this.add([
                 pos(6, 50 + (24 * this.get("boxElement").length)),
                 anchor("left"),
@@ -66,20 +36,23 @@ function boxComp() {
                 "boxElement",
             ]);
 
-            const element = e();
+            return quote;
+        },
 
-            return element;
+        addTitle(t, align) {
+            this.add([
+                pos(this.center.x, 30),
+                anchor(align),
+                fixed(),
+                text(t, { align: align, size: 28 }),
+                color(BLACK),
+                "boxTitle",
+                "boxElement",
+            ]);
         },
 
         addEditableText(t, defaultValue, setter) {
-            const quote = this.add([
-                pos(6, 50 + (24 * this.get("boxElement").length)),
-                anchor("left"),
-                fixed(),
-                text(t, { size: 20 }),
-                color(BLACK),
-                "boxElement",
-            ]);
+            const quote = this.addQuote(t);
 
             const editableText = this.add([
                 pos(quote.pos.add(140, 0)),
@@ -95,6 +68,7 @@ function boxComp() {
 
             editableText.textValue = editableText.add([
                 z(10),
+                layer("ui"),
                 anchor("left"),
                 fixed(),
                 text(String(defaultValue), { size: 20 }),
@@ -149,14 +123,7 @@ function boxComp() {
         },
 
         addCheckbox(t, defaultValue, action) {
-            const quote = this.add([
-                pos(6, 30 + (24 * this.get("boxElement").length)),
-                anchor("left"),
-                fixed(),
-                text(t, { size: 20 }),
-                color(BLACK),
-                "boxElement",
-            ]);
+            const quote = this.addQuote(t);
 
             const checkbox = this.add([
                 pos(quote.pos.add(160, 0)),
@@ -225,14 +192,7 @@ function boxComp() {
         addOption(t, options, defaultValue, action, arrow) {
             let optionIndex = 0;
 
-            const quote = this.add([
-                pos(6, 30 + (24 * this.get("boxElement").length)),
-                anchor("left"),
-                fixed(),
-                text(t, { size: 20 }),
-                color(BLACK),
-                "boxElement",
-            ]);
+            const quote = this.addQuote(t);
 
             const selected = this.add([
                 pos(quote.pos.add(120, 0)),
@@ -297,42 +257,38 @@ function boxComp() {
     };
 }
 
-export function addUIBox(w, h, p, arrow = "right") {
+export function addUIBox(w, h, p, arrow = "right", title) {
     let center = vec2(w / 2, h / 2);
 
     let arrows = {
         "right": {
-            icon: "˃",
+            icon: ">",
             pos: vec2(-14, center.y),
             anchor: "center",
-            func: "toggleRight",
         },
         "left": {
-            icon: "˂",
+            icon: "<",
             pos: vec2(w + 14, center.y),
             anchor: "center",
-            func: "toggleLeft",
         },
         "up": {
-            icon: "˄",
+            icon: "^",
             pos: vec2(center.x, h + 14),
             anchor: vec2(0, -0.5),
-            func: "toggleUp",
         },
         "down": {
             icon: "˅",
             pos: vec2(center.x, -14),
             anchor: vec2(0, -0.5),
-            func: "toggleDown",
         },
     };
 
-
     const box = add([
         pos(p),
-        z(50),
         fixed(),
+        layer("ui"),
         boxComp(),
+        { center: center }
     ]);
 
     box.bg = box.add([
@@ -350,6 +306,7 @@ export function addUIBox(w, h, p, arrow = "right") {
         area(),
         fixed(),
         {
+            side: arrow,
             rot() {
                 tween(this.angle, this.angle + 180, 0.5, (v) => { this.angle = v; }, easings.easeInBack);
             }
@@ -357,19 +314,11 @@ export function addUIBox(w, h, p, arrow = "right") {
     ]);
 
     arrowObj.onClick(() => {
-        box[arrows[arrow].func]();
+        box.toggle(arrowObj.side);
         arrowObj.rot();
     });
 
-    box.add([
-        pos(center.x, 20),
-        anchor("center"),
-        fixed(),
-        text(""),
-        color(BLACK),
-        "boxTitle",
-        "boxElement",
-    ]);
+    box.addTitle(title ?? "", "center");
 
     return box;
 }
