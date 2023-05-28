@@ -2,6 +2,16 @@ import * as K from "kaboom";
 import { ReturnMakeCtx } from "./plugins/make";
 import { ReturnLayerCtx } from "./plugins/layer";
 
+// TODO: Move types to different file
+export interface KanimUIContext {
+    uiBox(): BoxComp;
+    uiInputField(this: KanimUIContext): InputFieldComp;
+
+    uiMakeInputField(this: KanimUIContext, defaultValue: string): K.GameObj<InputFieldComp>;
+
+    uiAddBox(this: KanimUIContext, width: number, height: number, side: K.Anchor): K.GameObj<BoxComp | K.PosComp>;
+}
+
 interface BoxComp extends K.Comp {
     toggleView(): void;
     addElement<T>(title: string, element: K.GameObj<T>): K.GameObj<T>;
@@ -13,17 +23,8 @@ interface InputFieldComp extends K.Comp {
     onInputSet(action: (v: string) => void): void;
 }
 
-export interface KanimUIContext {
-    uiBox(): BoxComp;
-    uiInputField(this: KanimUIContext): InputFieldComp;
-
-    uiMakeInputField(this: KanimUIContext, defaultValue: string): K.GameObj<InputFieldComp>;
-
-    uiAddBox(this: KanimUIContext, width: number, height: number, side: K.Anchor): K.GameObj<BoxComp | K.PosComp>;
-}
-
 // #region Plugin
-export function kanimUI(k: K.KaboomCtx & ReturnMakeCtx & ReturnLayerCtx): KanimUIContext {
+export default function kanimUI(k: K.KaboomCtx & ReturnMakeCtx & ReturnLayerCtx) {
     function autoAlign(obj, align: string, boxDimensions: K.Vec2) {
         const w = boxDimensions.x;
         const h = boxDimensions.y;
@@ -85,7 +86,6 @@ export function kanimUI(k: K.KaboomCtx & ReturnMakeCtx & ReturnLayerCtx): KanimU
                     const e = quote.add(element);
                     // TODO: hardcoded
                     e.use(k.pos(120, 0));
-                    console.log(e.pos);
 
                     return e;
                 },
@@ -239,6 +239,13 @@ export function kanimUI(k: K.KaboomCtx & ReturnMakeCtx & ReturnLayerCtx): KanimU
             return {
                 id: "ui_input_text",
                 editableText: null!,
+                inputValue: "",
+
+                setValue(newValue: any) {
+                    this.editableText.text = String(newValue);
+                    this.inputValue = String(newValue);
+                    this.trigger("inputSet", newValue);
+                },
 
                 onInputSet(action: (v) => void) {
                     this.on("inputSet", action);

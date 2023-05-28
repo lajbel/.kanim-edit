@@ -1,11 +1,25 @@
-export default function kanimPlugin(k) {
+import * as K from "kaboom";
+
+// TODO: Many anys here, fix them
+export interface KanimPlayCtx {
+    kanimAnimation(animations: any): KanimAnimationComp;
+}
+
+export interface KanimAnimationComp extends K.Comp {
+    isPlaying: boolean;
+    animations: any;
+
+    kmPlay(anim: string | number): void;
+}
+
+export default function kanimPlugin(k: K.KaboomCtx) {
     return {
         loadAnimation() {
 
         },
 
         kanimAnimation(animations) {
-            playingProps = {};
+            let playingProps: any = {};
 
             return {
                 id: "kanimAnimation",
@@ -22,17 +36,23 @@ export default function kanimPlugin(k) {
                     }
                 },
 
-                kmPlay(anim) {
-                    let animation = null;
+                kmPlay(anim: string | number) {
+                    let animation: any;
 
-                    if (typeof anim == "string") {
-                        animation = this.animations.find((a) => a.name == anim);
-                    }
-                    else {
-                        animation = this.animations[anim];
+                    switch (typeof anim) {
+                        case "string":
+                            animation = this.animations.find((a) => a.name == anim);
+                            break;
+                        case "number":
+                            animation = this.animations[anim];
+                            break;
+                        default:
+                            animation = null;
                     }
 
-                    // execute tweens
+                    if (animation == null) return;
+
+                    // execute tweens for each property
                     for (const prop of Object.keys(animation.frames[0].startProps)) {
                         tween(
                             animation.frames[0].startProps[prop],

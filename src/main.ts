@@ -1,9 +1,9 @@
-import kaboom, { KaboomCtx, KaboomPlugin } from "kaboom";
+import kaboom, * as K from "kaboom";
 import "kaboom/global";
-import kanimPlugin from "./plugin";
+import kanimPlay, { KanimPlayCtx } from "./plugins/play";
 import returnLayer, { ReturnLayerCtx } from "./plugins/layer";
 import returnMake, { ReturnMakeCtx } from "./plugins/make";
-import { KanimUIContext, kanimUI } from "./uistuff";
+import kanimUI, { KanimUIContext } from "./uistuff";
 
 const k = kaboom({
     logMax: 10,
@@ -11,10 +11,10 @@ const k = kaboom({
     plugins: [
         returnLayer,
         returnMake,
-        kanimPlugin,
+        kanimPlay,
         kanimUI,
-    ] as unknown as KaboomPlugin<any>[],
-}) as unknown as KaboomCtx & ReturnMakeCtx & KanimUIContext & ReturnLayerCtx;
+    ] as unknown as K.KaboomPlugin<any>[],
+}) as unknown as K.KaboomCtx & ReturnMakeCtx & KanimUIContext & ReturnLayerCtx & KanimPlayCtx;
 
 const THEME_COLOR = k.rgb(120, 127, 255);
 
@@ -99,6 +99,8 @@ k.scene("newEditor", (loadedProject) => {
     // #region UI
     const uiStartState = k.uiAddBox(230, height() / 2, "topleft");
     const uiFinishState = k.uiAddBox(230, height() / 2, "botleft");
+    const uiStartInputFields: any[] = [];
+    const uiFinishInputFields: any[] = [];
 
     for (const prop of props) {
         if (prop.type == "editableNumber") {
@@ -119,6 +121,9 @@ k.scene("newEditor", (loadedProject) => {
             finishInputField.onInputSet((v) => {
                 animations[curAnimIndex].frames[curFrameIndex].finishProps[prop.name] = Number(v);
             });
+
+            uiStartInputFields.push(startInputField);
+            uiFinishInputFields.push(finishInputField);
         }
     }
 
@@ -137,20 +142,20 @@ k.scene("newEditor", (loadedProject) => {
     // #region Timeline
     const timeline = k.uiAddBox(width() - 550, 240, "bot");
 
-    timeline.addTimelineFrame = (isSelected, isNew) => {
+    function addTimelineFrame(isSelected: boolean, isNew: boolean) {
         const frameBtn = timeline.add([
-            pos(10 + (60 * timeline.get("timelineFrame").length), 40),
+            pos(10 + (60 * timeline.get("timeline_frame").length), 40),
             anchor("left"),
             fixed(),
             rect(50, 20),
             color(THEME_COLOR),
             outline(0),
             area(),
-            "boxElement",
-            "timelineFrame",
+            "box_element",
+            "timeline_frame",
             {
                 selected: isSelected,
-                index: timeline.get("timelineFrame").length,
+                index: timeline.get("timeline_frame").length,
             }
         ]);
 
@@ -162,6 +167,7 @@ k.scene("newEditor", (loadedProject) => {
             };
 
             animations[curAnimIndex].frames.push(newFrame);
+            console.log(animations[curAnimIndex].frames);
 
             // curFrameIndex = animations[curAnimIndex].frames.length - 1;
         }
@@ -169,11 +175,16 @@ k.scene("newEditor", (loadedProject) => {
         frameBtn.onClick(() => {
             frameBtn.selected = true;
 
-            for (const frame of timeline.get("timelineFrame")) {
+            for (const frame of timeline.get("timeline_frame")) {
                 if (frame != frameBtn) frame.selected = false;
             }
 
             curFrameIndex = frameBtn.index;
+
+            for (let i = 0; i < uiStartInputFields.length; i++) {
+                uiStartInputFields[i].setValue(animations[curAnimIndex].frames[curFrameIndex].startProps[props[i].name].toString());
+                uiFinishInputFields[i].setValue(animations[curAnimIndex].frames[curFrameIndex].finishProps[props[i].name].toString());
+            }
         });
 
         frameBtn.onUpdate(() => {
@@ -183,7 +194,7 @@ k.scene("newEditor", (loadedProject) => {
     };
 
     for (let i = 0; i < animations[curAnimIndex].frames.length; i++) {
-        timeline.addTimelineFrame(i == 0, false);
+        addTimelineFrame(i == 0, false);
     }
 
     const addBtn = timeline.add([
@@ -196,13 +207,22 @@ k.scene("newEditor", (loadedProject) => {
     ]);
 
     addBtn.onClick(() => {
-        timeline.addTimelineFrame(false, true);
+        addTimelineFrame(false, true);
     });
 
     addBtn.onUpdate(() => {
         // put in in the front of the latest timeline frame
-        addBtn.pos = timeline.get("timelineFrame")[timeline.get("timelineFrame").length - 1]?.pos.add(80, 0);
+        addBtn.pos = timeline.get("timeline_frame")[timeline.get("timeline_frame").length - 1]?.pos.add(80, 0);
     });
+
+    const timelineAnimationProgress = timeline.add([
+        pos(0, 0),
+        fixed(),
+        rect(1, 360),
+        outline(1),
+        color(THEME_COLOR),
+        "timeline_animation_progress",
+    ]);
     // #endregion
 
     // #region Play Button
@@ -237,16 +257,16 @@ k.scene("newEditor", (loadedProject) => {
     // #endregion
 
     // #region Buddy
-    const buddy = add([
-        pos(center()),
-        z(10),
-        anchor("center"),
+    const buddy = k.add([
+        k.pos(k.center()),
+        k.z(10),
+        k.anchor("center"),
     ]);
 
     const buddySprite = buddy.add([
-        anchor("center"),
-        sprite("bean"),
-        kanimAnimation(animations),
+        k.anchor("center"),
+        k.sprite("bean"),
+        k.kanimAnimation(animations),
     ]);
     // #endregion
 
@@ -254,14 +274,26 @@ k.scene("newEditor", (loadedProject) => {
     function playAnimation() {
         if (animIsPlaying) return;
 
-        buddySprite.use(kanimAnimation(animations));
+        buddySprite.use(k.kanimAnimation(animations));
         buddySprite.kmPlay(curAnimIndex);
+        tween(
+            0,
+            timeline.get("timeline_frame")[timeline.get("timeline_frame").length - 1].pos.x + 50,
+            animations[curAnimIndex].frames[curFrameIndex].settings.time,
+            (v) => {
+                timelineAnimationProgress.pos.x = v;
+            },
+            easings.linear,
+        );
+    }
+
+    function resetAnimation() {
+        // TODO: reset animation
     }
 
     function saveAnimation() {
         let animData = {
-            initialProps,
-            finishProps,
+            animatons: animations,
         };
 
         downloadText(`${defaultSettings.name}.kanim`, JSON.stringify(animData));
@@ -270,17 +302,17 @@ k.scene("newEditor", (loadedProject) => {
 
     // #region Input
     onKeyPress("s", () => {
-        if (isKeyDown("shift")) saveAnimation();
+        if (isKeyDown("shift" as K.Key)) saveAnimation();
     });
 
-    // onKeyPress("space", () => {
-    //     if (isInPlay) resetAnimation();
-    //     else playAnimation();
-    // });
+    onKeyPress("space", () => {
+        if (animIsPlaying) resetAnimation();
+        else playAnimation();
+    });
 
     onScroll((scrollDt) => {
         let multiplier = 2;
-        if (isKeyDown("shift")) multiplier = 4;
+        if (isKeyDown("shift" as K.Key)) multiplier = 4;
 
         if (scrollDt.y < 0) {
             camScale(camScale().add(vec2(dt() * multiplier)));
