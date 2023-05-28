@@ -1,19 +1,25 @@
-import kaboom from "kaboom";
+import kaboom, { KaboomCtx, KaboomPlugin } from "kaboom";
 import "kaboom/global";
 import kanimPlugin from "./plugin";
-import layerPlugin from "./plugins/layer";
-import { addUIBox } from "./uistuff";
+import returnLayer, { ReturnLayerCtx } from "./plugins/layer";
+import returnMake, { ReturnMakeCtx } from "./plugins/make";
+import { KanimUIContext, kanimUI } from "./uistuff";
 
-kaboom({
+const k = kaboom({
     logMax: 10,
     background: [230, 211, 211],
-    plugins: [layerPlugin, kanimPlugin],
-});
+    plugins: [
+        returnLayer,
+        returnMake,
+        kanimPlugin,
+        kanimUI,
+    ] as unknown as KaboomPlugin<any>[],
+}) as unknown as KaboomCtx & ReturnMakeCtx & KanimUIContext & ReturnLayerCtx;
 
-loadSprite("bean", "sprites/bean.png");
-loadSprite("playbutton", "sprites/playbutton.png");
+const THEME_COLOR = k.rgb(120, 127, 255);
 
-const THEME_COLOR = rgb(120, 127, 255);
+k.loadSprite("bean", "sprites/bean.png");
+k.loadSprite("playbutton", "sprites/playbutton.png");
 
 // #region Default Options
 // The animation's default options
@@ -74,7 +80,7 @@ let defaultProject = {
 // #endregion
 
 // #region Editor
-scene("newEditor", (loadedProject) => {
+k.scene("newEditor", (loadedProject) => {
     const animations = [...loadedProject.animations];
 
     // #region States
@@ -84,50 +90,54 @@ scene("newEditor", (loadedProject) => {
     let runningTw = [];
     // #endregion
 
-    layers([
+    k.layers([
         "background",
         "buddy",
         "ui",
     ], "ui");
 
     // #region UI
-    const uiStartState = addUIBox(230, height() / 2, vec2(0), "left", "Start");
-    const uiFinishState = addUIBox(230, height() / 2, vec2(0, height() / 2), "left", "Finish");
+    const uiStartState = k.uiAddBox(230, height() / 2, "topleft");
+    const uiFinishState = k.uiAddBox(230, height() / 2, "botleft");
 
     for (const prop of props) {
         if (prop.type == "editableNumber") {
-            uiStartState.addEditableText(
+            const startInputField = uiStartState.addElement(
                 prop.name,
-                animations[curAnimIndex].frames[curFrameIndex].startProps[prop.name],
-                (v) => {
-                    animations[curAnimIndex].frames[curFrameIndex].startProps[prop.name] = Number(v);
-                }
+                k.uiMakeInputField(animations[curAnimIndex].frames[curFrameIndex].startProps[prop.name].toString()),
             );
-            uiFinishState.addEditableText(
+
+            startInputField.onInputSet((v) => {
+                animations[curAnimIndex].frames[curFrameIndex].startProps[prop.name] = Number(v);
+            });
+
+            const finishInputField = uiFinishState.addElement(
                 prop.name,
-                animations[curAnimIndex].frames[curFrameIndex].finishProps[prop.name],
-                (v) => {
-                    animations[curAnimIndex].frames[curFrameIndex].finishProps[prop.name] = Number(v);
-                }
+                k.uiMakeInputField(animations[curAnimIndex].frames[curFrameIndex].finishProps[prop.name].toString()),
             );
+
+            finishInputField.onInputSet((v) => {
+                animations[curAnimIndex].frames[curFrameIndex].finishProps[prop.name] = Number(v);
+            });
         }
     }
 
-    const uiAnimationSettings = addUIBox(400, 200, vec2(260, 0), "up", "Settings");
-    uiAnimationSettings.addEditableText("name", animations[curAnimIndex].name, (v) => { animations[curAnimIndex].name = v; });
-    uiAnimationSettings.addOption("easings", [...Object.keys(easings)], "linear", (v) => { animations[curAnimIndex].frames[curFrameIndex].easing = easings[v]; });
-    uiAnimationSettings.addEditableText("time", animations[curAnimIndex].frames[curFrameIndex].time, (v) => { animations[curAnimIndex].frames[curFrameIndex].time = v; });
-    // uiAnimationSettings.addCheckbox("auto repeat", false, (v) => { defaultSettings.autoRepeat = v; });
+    // const uiAnimationSettings = addUIBox(400, 200, vec2(260, 0), "up", "Settings");
+    // uiAnimationSettings.addEditableText("name", animations[curAnimIndex].name, (v) => { animations[curAnimIndex].name = v; });
+    // uiAnimationSettings.addOption("easings", [...Object.keys(easings)], "linear", (v) => { animations[curAnimIndex].frames[curFrameIndex].settings.easing = easings[v]; });
+    // uiAnimationSettings.addEditableText("time", animations[curAnimIndex].frames[curFrameIndex].settings.time, (v) => { animations[curAnimIndex].frames[curFrameIndex].settings.time = v; });
+    // // uiAnimationSettings.addCheckbox("auto repeat", false, (v) => { defaultSettings.autoRepeat = v; });
 
-    const uiAnimations = addUIBox(280, 400, vec2(width() - 280, 0), "up", "Animations");
+    // const uiAnimations = addUIBox(280, 400, vec2(width() - 280, 0), "up", "Animations");
 
-    for (let i = 0; i < animations.length; i++) {
-        uiAnimations.addQuote(animations[i].name);
-    }
+    // for (let i = 0; i < animations.length; i++) {
+    //     uiAnimations.addQuote(animations[i].name);
+    // }
 
-    const timeline = addUIBox(width() - 550, 240, vec2(570 / 2, height() - 240), "down");
+    // #region Timeline
+    const timeline = k.uiAddBox(width() - 550, 240, "bot");
 
-    timeline.addTimelineFrame = (isSelected) => {
+    timeline.addTimelineFrame = (isSelected, isNew) => {
         const frameBtn = timeline.add([
             pos(10 + (60 * timeline.get("timelineFrame").length), 40),
             anchor("left"),
@@ -144,18 +154,24 @@ scene("newEditor", (loadedProject) => {
             }
         ]);
 
+        if (isNew) {
+            const newFrame = {
+                startProps: Object.assign({}, defaultInitialProps),
+                finishProps: Object.assign({}, defaultFinishProps),
+                settings: Object.assign({}, defaultSettings)
+            };
+
+            animations[curAnimIndex].frames.push(newFrame);
+
+            // curFrameIndex = animations[curAnimIndex].frames.length - 1;
+        }
+
         frameBtn.onClick(() => {
             frameBtn.selected = true;
 
-            // for (const frame of timeline.get("timelineFrame")) {
-            //     if (frame != frameBtn) frame.selected = false;
-            // }
-
-
-            // for (const prop of props) {
-            //     initialState.get(prop.name).value = currentEditingFrame.initialProps[prop.name];
-            //     finishState.get(prop.name).value = currentEditingFrame.finishProps[prop.name];
-            // }
+            for (const frame of timeline.get("timelineFrame")) {
+                if (frame != frameBtn) frame.selected = false;
+            }
 
             curFrameIndex = frameBtn.index;
         });
@@ -167,7 +183,7 @@ scene("newEditor", (loadedProject) => {
     };
 
     for (let i = 0; i < animations[curAnimIndex].frames.length; i++) {
-        timeline.addTimelineFrame(i == 0);
+        timeline.addTimelineFrame(i == 0, false);
     }
 
     const addBtn = timeline.add([
@@ -180,13 +196,14 @@ scene("newEditor", (loadedProject) => {
     ]);
 
     addBtn.onClick(() => {
-        timeline.addTimelineFrame(false);
+        timeline.addTimelineFrame(false, true);
     });
 
     addBtn.onUpdate(() => {
         // put in in the front of the latest timeline frame
         addBtn.pos = timeline.get("timelineFrame")[timeline.get("timelineFrame").length - 1]?.pos.add(80, 0);
     });
+    // #endregion
 
     // #region Play Button
     const playButton = add([
@@ -275,7 +292,10 @@ scene("newEditor", (loadedProject) => {
     // #endregion
 
     // #region onUpdate()
-    // #endregion
+    onUpdate(() => {
+        // debug.log(curFrameIndex);
+    });
+    // // #endregion
 });
 // #endregion
 
