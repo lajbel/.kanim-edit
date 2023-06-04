@@ -1,5 +1,4 @@
 import * as K from "kaboom";
-import { ReturnMakeCtx } from "./plugins/make";
 import { ReturnLayerCtx } from "./plugins/layer";
 
 // TODO: Move types to different file
@@ -24,20 +23,20 @@ interface InputFieldComp extends K.Comp {
 }
 
 // #region Plugin
-export default function kanimUI(k: K.KaboomCtx & ReturnMakeCtx & ReturnLayerCtx) {
+export default function kanimUI(k: K.KaboomCtx & ReturnLayerCtx) {
     function autoAlign(obj, align: string, boxDimensions: K.Vec2) {
         const w = boxDimensions.x;
         const h = boxDimensions.y;
 
         const alignsToVec2 = {
-            "left": k.vec2(0, (height() / 2) + (h / 2)),
+            "left": k.vec2(0, (k.height() / 2) + (h / 2)),
             "topleft": k.vec2(0, 0),
-            "botleft": k.vec2(0, height() - h),
-            "right": k.vec2(width() - w, (height() / 2) + (h / 2)),
-            "topright": k.vec2(width() - w, 0),
-            "botright": k.vec2(width() - w, height() - h / 2),
-            "top": k.vec2((width() / 2) - (w / 2), 0),
-            "bot": k.vec2((width() / 2) - (w / 2), height() - h / 2),
+            "botleft": k.vec2(0, k.height() - h),
+            "right": k.vec2(k.width() - w, (k.height() / 2) + (h / 2)),
+            "topright": k.vec2(k.width() - w, 0),
+            "botright": k.vec2(k.width() - w, k.height() - h / 2),
+            "top": k.vec2((k.width() / 2) - (w / 2), 0),
+            "bot": k.vec2((k.width() / 2) - (w / 2), k.height() - h / 2),
         };
 
         obj.pos = alignsToVec2[align];
@@ -63,10 +62,10 @@ export default function kanimUI(k: K.KaboomCtx & ReturnMakeCtx & ReturnLayerCtx)
                     };
 
                     if (hidden) {
-                        k.tween(this.pos[dirs[dir].xy], initPos[dirs[dir].xy], 1, (v) => { this.pos[dirs[dir].xy] = v; }, easings.easeInOutBack);
+                        k.tween(this.pos[dirs[dir].xy], initPos[dirs[dir].xy], 1, (v) => { this.pos[dirs[dir].xy] = v; }, k.easings.easeInOutBack);
                     }
                     else {
-                        k.tween(this.pos[dirs[dir].xy], dirs[dir].v < 0 ? window[dirs[dir].s]() - 10 : 0 - this.bg[dirs[dir].s], 1, (v) => { this.pos[dirs[dir].xy] = v; }, easings.easeInOutBack);
+                        k.tween(this.pos[dirs[dir].xy], dirs[dir].v < 0 ? window[dirs[dir].s]() - 10 : 0 - this.bg[dirs[dir].s], 1, (v) => { this.pos[dirs[dir].xy] = v; }, k.easings.easeInOutBack);
                     }
 
                     hidden = !hidden;

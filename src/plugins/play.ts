@@ -30,9 +30,9 @@ export default function kanimPlugin(k: K.KaboomCtx) {
 
                 update() {
                     if (this.isPlaying) {
-                        this.use(scale(playingProps.scaleX, playingProps.scaleY));
-                        this.use(rotate(playingProps.rotation));
-                        this.use(opacity(playingProps.opacity));
+                        this.use(k.scale(playingProps.scaleX, playingProps.scaleY));
+                        this.use(k.rotate(playingProps.rotation));
+                        this.use(k.opacity(playingProps.opacity));
                     }
                 },
 
@@ -54,7 +54,7 @@ export default function kanimPlugin(k: K.KaboomCtx) {
 
                     // execute tweens for each property
                     for (const prop of Object.keys(animation.frames[0].startProps)) {
-                        tween(
+                        k.tween(
                             animation.frames[0].startProps[prop],
                             animation.frames[0].finishProps[prop],
                             animation.frames[0].settings.time,
