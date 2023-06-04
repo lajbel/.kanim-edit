@@ -1,18 +1,18 @@
 import kaboom, * as K from "kaboom";
 import kanimPlay from "./plugins/play";
 import returnLayer from "./plugins/layer";
-import kanimUI from "./uistuff";
+import kanimUI from "./ui";
 import { GameCtx } from "./types";
 
-const k = kaboom({
+export const k = kaboom({
     logMax: 10,
     background: [230, 211, 211],
     plugins: [
         returnLayer,
         kanimPlay,
-        kanimUI as K.KaboomPlugin<any>,
-    ],
-}) as unknown as GameCtx;
+        kanimUI,
+    ] as K.KaboomOpt["plugins"],
+}) as GameCtx;
 
 const THEME_COLOR = k.rgb(120, 127, 255);
 
@@ -97,6 +97,9 @@ k.scene("newEditor", (loadedProject) => {
     // #region UI
     const uiStartState = k.uiAddBox(230, k.height() / 2, "topleft");
     const uiFinishState = k.uiAddBox(230, k.height() / 2, "botleft");
+    uiStartState.addTitle("Start State");
+    uiFinishState.addTitle("Finish State");
+
     const uiStartInputFields: any[] = [];
     const uiFinishInputFields: any[] = [];
 
@@ -149,7 +152,7 @@ k.scene("newEditor", (loadedProject) => {
             k.color(THEME_COLOR),
             k.outline(0),
             k.area(),
-            "box_element",
+            "boxElement",
             "timeline_frame",
             {
                 selected: isSelected,
@@ -323,7 +326,7 @@ k.scene("newEditor", (loadedProject) => {
 
     // #region onUpdate()
     k.onUpdate(() => {
-        // debug.log(curFrameIndex);
+        // k.debug.log(curFrameIndex);
     });
     // // #endregion
 });

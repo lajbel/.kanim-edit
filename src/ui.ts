@@ -1,18 +1,18 @@
 import * as K from "kaboom";
 import { ReturnLayerCtx } from "./plugins/layer";
+import { GameCtx } from "./types";
 
-// TODO: Move types to different file
+// #region Types
 export interface KanimUIContext {
     uiBox(): BoxComp;
     uiInputField(this: KanimUIContext): InputFieldComp;
-
     uiMakeInputField(this: KanimUIContext, defaultValue: string): K.GameObj<InputFieldComp>;
-
     uiAddBox(this: KanimUIContext, width: number, height: number, side: K.Anchor): K.GameObj<BoxComp | K.PosComp>;
 }
 
 interface BoxComp extends K.Comp {
     toggleView(): void;
+    addTitle(title: string): void;
     addElement<T>(title: string, element: K.GameObj<T>): K.GameObj<T>;
 }
 
@@ -21,9 +21,10 @@ interface InputFieldComp extends K.Comp {
 
     onInputSet(action: (v: string) => void): void;
 }
+// #endregion
 
 // #region Plugin
-export default function kanimUI(k: K.KaboomCtx & ReturnLayerCtx) {
+export default function kanimUI(k: GameCtx) {
     function autoAlign(obj, align: string, boxDimensions: K.Vec2) {
         const w = boxDimensions.x;
         const h = boxDimensions.y;
@@ -52,7 +53,6 @@ export default function kanimUI(k: K.KaboomCtx & ReturnLayerCtx) {
                 add() {
                     initPos = this.pos.clone();
                 },
-
                 toggleView(dir: "up" | "down" | "left" | "right") {
                     let dirs = {
                         up: { xy: "y", v: 1, s: "height" },
@@ -70,16 +70,26 @@ export default function kanimUI(k: K.KaboomCtx & ReturnLayerCtx) {
 
                     hidden = !hidden;
                 },
-
-                addElement<T>(this: K.GameObj<any>, title: string, element: K.GameObj<T>) {
+                addTitle(title: string) {
+                    this.add([
+                        k.pos(6, 24 + (24 * this.get("boxElement").length)),
+                        k.anchor("left"),
+                        k.fixed(),
+                        k.text(title, { size: 30 }),
+                        k.color(k.BLACK),
+                        "boxTitle",
+                        "boxElement",
+                    ]);
+                },
+                addElement<T>(this: K.GameObj<unknown>, title: string, element: K.GameObj<T>) {
                     const quote = this.add([
                         // TODO: hardcoded
-                        k.pos(6, 50 + (24 * this.get("box_element").length)),
+                        k.pos(6, 28 + (24 * this.get("boxElement").length)),
                         k.anchor("left"),
                         k.fixed(),
                         k.text(title, { size: 20 }),
                         k.color(k.BLACK),
-                        "box_element",
+                        "boxElement",
                     ]);
 
                     const e = quote.add(element);
@@ -88,18 +98,6 @@ export default function kanimUI(k: K.KaboomCtx & ReturnLayerCtx) {
 
                     return e;
                 },
-
-                // addTitle(t, align) {
-                //     this.add([
-                //         pos(this.center.x, 30),
-                //         anchor(align),
-                //         fixed(),
-                //         text(t, { align: align, size: 28 }),
-                //         color(BLACK),
-                //         "boxTitle",
-                //         "boxElement",
-                //     ]);
-                // },
 
                 // addCheckbox(t, defaultValue, action) {
                 //     const quote = this.addQuote(t);
@@ -236,11 +234,11 @@ export default function kanimUI(k: K.KaboomCtx & ReturnLayerCtx) {
 
         uiInputField() {
             return {
-                id: "ui_input_text",
+                id: "uiInputField",
                 editableText: null!,
                 inputValue: "",
 
-                setValue(newValue: any) {
+                setValue(newValue: unknown) {
                     this.editableText.text = String(newValue);
                     this.inputValue = String(newValue);
                     this.trigger("inputSet", newValue);
@@ -261,7 +259,7 @@ export default function kanimUI(k: K.KaboomCtx & ReturnLayerCtx) {
                 k.fixed(),
                 this.uiInputField(),
                 {
-                    background: null! as K.GameObj,
+                    background: null as unknown as K.GameObj<unknown> | undefined,
                 }
             ]);
 
@@ -275,7 +273,7 @@ export default function kanimUI(k: K.KaboomCtx & ReturnLayerCtx) {
                 k.area(),
             ]);
 
-            const inputBackground = inputText.background = inputText.add([
+            inputText.background = inputText.add([
                 k.pos(-2, 0),
                 k.z(5),
                 k.layer("ui"),
@@ -284,6 +282,8 @@ export default function kanimUI(k: K.KaboomCtx & ReturnLayerCtx) {
                 k.rect(58, 20),
                 k.color(120, 117, 117),
             ]);
+
+            const inputBackground = inputText.background;
 
             editableText.onUpdate(() => {
                 editableText.use(k.area({ shape: new k.Rect(k.vec2(0), inputBackground.width, inputBackground.height) }));
