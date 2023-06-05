@@ -324,6 +324,27 @@ export default function kanimUI(k: GameCtx) {
 
             return inputText;
         },
+        uiMakeButton(text: string, action: () => void) {
+            const button = k.make([
+                k.pos(0),
+                k.layer("ui"),
+                k.anchor("left"),
+                k.fixed(),
+                k.area(),
+                k.anchor("center"),
+                k.rect(100, 30),
+            ]);
+
+            const buttonText = button.add([
+                k.pos(0),
+                k.text(text, { size: 18 }),
+                k.color(k.BLACK),
+            ]);
+
+            button.onClick(action);
+
+            return button;
+        },
         // #endregion
 
         // #region Adders

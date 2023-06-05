@@ -13,9 +13,14 @@ export interface KanimAnimationComp extends K.Comp {
 }
 
 export default function kanimPlugin(k: K.KaboomCtx) {
-    return {
-        loadAnimation() {
+    let animations = {};
 
+    return {
+        async loadAnimation(name:string, path: string) {
+            const animJSON = await k.loadJSON(name, path);
+            const animData = animJSON.data;
+
+            animations[name] = animData;
         },
 
         kanimAnimation(animations) {
@@ -38,7 +43,7 @@ export default function kanimPlugin(k: K.KaboomCtx) {
 
                 kmPlay(anim: string | number) {
                     let animation: any;
-
+                    let currentFrame = 0;
                     switch (typeof anim) {
                         case "string":
                             animation = this.animations.find((a) => a.name == anim);
@@ -52,15 +57,24 @@ export default function kanimPlugin(k: K.KaboomCtx) {
 
                     if (animation == null) return;
 
-                    // execute tweens for each property
-                    for (const prop of Object.keys(animation.frames[0].startProps)) {
-                        k.tween(
-                            animation.frames[0].startProps[prop],
-                            animation.frames[0].finishProps[prop],
-                            animation.frames[0].settings.time,
-                            (v) => { playingProps[prop] = v; },
-                            animation.frames[0].settings.easing
-                        );
+                    playingProps = animation.frames[0].startProps;
+
+                    function runFrame(frame: number) {
+                        for (const prop of Object.keys(animation.frames[frame].startProps)) {
+                            k.tween(
+                                playingProps[prop],
+                                animation.frames[frame].finishProps[prop],
+                                animation.frames[frame].settings.time,
+                                (v) => { playingProps[prop] = v; },
+                                animation.frames[frame].settings.easing
+                            );
+                        }
+                    }
+
+                    for (let i = 0; i < animation.frames.length; i++) {
+                        k.wait(animation.frames[i - 1]?.settings?.time ?? 0, () => {
+                            runFrame(i);
+                        });
                     }
 
                     this.isPlaying = true;

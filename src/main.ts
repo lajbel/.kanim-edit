@@ -15,9 +15,14 @@ export const k = kaboom({
 }) as GameCtx;
 
 const THEME_COLOR = k.rgb(120, 127, 255);
+const KEYS = {
+    save: "s" as K.Key, // ctrl + s
+    play: "space" as K.Key,
+}
 
 k.loadSprite("bean", "sprites/bean.png");
 k.loadSprite("playbutton", "sprites/playbutton.png");
+k.loadBitmapFont("unscii", "fonts/unscii_8x8.png", 8, 8);
 
 // #region Default Options
 // The animation's default options
@@ -85,7 +90,7 @@ k.scene("newEditor", (loadedProject) => {
     let curAnimIndex = 0;
     let curFrameIndex = 0;
     let animIsPlaying = false;
-    let runningTw = [];
+    let runningTw: K.TweenController[] = [];
     // #endregion
 
     k.layers([
@@ -128,11 +133,13 @@ k.scene("newEditor", (loadedProject) => {
         }
     }
 
-    // const uiAnimationSettings = addUIBox(400, 200, vec2(260, 0), "up", "Settings");
-    // uiAnimationSettings.addEditableText("name", animations[curAnimIndex].name, (v) => { animations[curAnimIndex].name = v; });
-    // uiAnimationSettings.addOption("easings", [...Object.keys(easings)], "linear", (v) => { animations[curAnimIndex].frames[curFrameIndex].settings.easing = easings[v]; });
+    const uiAnimationSettings = k.uiAddBox(400, 200, "topright");
+    uiAnimationSettings.addTitle("Animation Settings");
+   // uiAnimationSettings.addOption("easings", [...Object.keys(easings)], "linear", (v) => { animations[curAnimIndex].frames[curFrameIndex].settings.easing = easings[v]; });
     // uiAnimationSettings.addEditableText("time", animations[curAnimIndex].frames[curFrameIndex].settings.time, (v) => { animations[curAnimIndex].frames[curFrameIndex].settings.time = v; });
-    // // uiAnimationSettings.addCheckbox("auto repeat", false, (v) => { defaultSettings.autoRepeat = v; });
+    // uiAnimationSettings.addCheckbox("auto repeat", false, (v) => { defaultSettings.autoRepeat = v; });
+    const animName = uiAnimationSettings.addElement("name", k.uiMakeInputField(animations[curAnimIndex].name));
+    animName.onInputSet((v) => { animations[curAnimIndex].name = v; });
 
     // const uiAnimations = addUIBox(280, 400, vec2(width() - 280, 0), "up", "Animations");
 
@@ -202,7 +209,7 @@ k.scene("newEditor", (loadedProject) => {
         k.pos(0),
         k.anchor("center"),
         k.fixed(),
-        k.text("+", { size: 34 }),
+        k.text("+", { size: 34, font: "unscii" }),
         k.color(THEME_COLOR),
         k.area(),
     ]);
@@ -277,19 +284,37 @@ k.scene("newEditor", (loadedProject) => {
 
         buddySprite.use(k.kanimAnimation(animations));
         buddySprite.kmPlay(curAnimIndex);
-        k.tween(
+
+        // TODO: move to another place
+        let allFramesTime = 0;
+        for (const frame of animations[curAnimIndex].frames) {
+            allFramesTime += frame.settings.time;
+        }
+
+        const tw = k.tween(
             0,
             timeline.get("timeline_frame")[timeline.get("timeline_frame").length - 1].pos.x + 50,
-            animations[curAnimIndex].frames[curFrameIndex].settings.time,
+            allFramesTime,
             (v) => {
                 timelineAnimationProgress.pos.x = v;
             },
             k.easings.linear,
         );
+
+        tw.onEnd(() => {
+            animIsPlaying = false;
+            runningTw = [];
+        });
+
+        runningTw.push(tw);
     }
 
     function resetAnimation() {
-        // TODO: reset animation
+        runningTw.forEach((tw) => {
+            tw.cancel();
+        });
+
+        runningTw = [];
     }
 
     function saveAnimation() {
@@ -302,11 +327,11 @@ k.scene("newEditor", (loadedProject) => {
     // #endregion
 
     // #region Input
-    k.onKeyPress("s", () => {
-        if (k.isKeyDown("shift" as K.Key)) saveAnimation();
+    k.onKeyPress(KEYS.save, () => {
+        if (k.isKeyDown("control")) saveAnimation();
     });
 
-    k.onKeyPress("space", () => {
+    k.onKeyPress(KEYS.play, () => {
         if (animIsPlaying) resetAnimation();
         else playAnimation();
     });
