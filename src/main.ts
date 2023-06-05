@@ -1,10 +1,11 @@
 import kaboom, * as K from "kaboom";
-import kanimPlay from "./plugins/play";
+import kanimPlay from "./play";
 import returnLayer from "./plugins/layer";
 import kanimUI from "./ui";
 import { GameCtx } from "./types";
 
 export const k = kaboom({
+    scale: 1,
     logMax: 10,
     background: [230, 211, 211],
     plugins: [
@@ -30,18 +31,26 @@ let props = [
     {
         name: "scaleX",
         type: "editableNumber",
+        startDefault: 1,
+        finishDefault: 2,
     },
     {
         name: "scaleY",
         type: "editableNumber",
+        startDefault: 1,
+        finishDefault: 2,
     },
     {
         name: "rotation",
         type: "editableNumber",
+        startDefault: 0,
+        finishDefault: 360,
     },
     {
         name: "opacity",
         type: "editableNumber",
+        startDefault: 0.5,
+        finishDefault: 1,
     },
 ];
 
@@ -86,7 +95,7 @@ let defaultProject = {
 k.scene("newEditor", (loadedProject) => {
     const animations = [...loadedProject.animations];
 
-    // #region States
+    // #region State
     let curAnimIndex = 0;
     let curFrameIndex = 0;
     let animIsPlaying = false;
@@ -108,6 +117,7 @@ k.scene("newEditor", (loadedProject) => {
     const uiStartInputFields: any[] = [];
     const uiFinishInputFields: any[] = [];
 
+    // Add elements for every property.
     for (const prop of props) {
         if (prop.type == "editableNumber") {
             const startInputField = uiStartState.addElement(
@@ -133,9 +143,12 @@ k.scene("newEditor", (loadedProject) => {
         }
     }
 
+    const uiFrameSettings = k.uiAddBox(320, k.height() / 4, "topleft");
+    uiFrameSettings.addTitle("Frame Settings");
+
     const uiAnimationSettings = k.uiAddBox(400, 200, "topright");
     uiAnimationSettings.addTitle("Animation Settings");
-   // uiAnimationSettings.addOption("easings", [...Object.keys(easings)], "linear", (v) => { animations[curAnimIndex].frames[curFrameIndex].settings.easing = easings[v]; });
+    // uiAnimationSettings.addOption("easings", [...Object.keys(easings)], "linear", (v) => { animations[curAnimIndex].frames[curFrameIndex].settings.easing = easings[v]; });
     // uiAnimationSettings.addEditableText("time", animations[curAnimIndex].frames[curFrameIndex].settings.time, (v) => { animations[curAnimIndex].frames[curFrameIndex].settings.time = v; });
     // uiAnimationSettings.addCheckbox("auto repeat", false, (v) => { defaultSettings.autoRepeat = v; });
     const animName = uiAnimationSettings.addElement("name", k.uiMakeInputField(animations[curAnimIndex].name));
@@ -302,7 +315,6 @@ k.scene("newEditor", (loadedProject) => {
         );
 
         tw.onEnd(() => {
-            animIsPlaying = false;
             runningTw = [];
         });
 
@@ -310,6 +322,8 @@ k.scene("newEditor", (loadedProject) => {
     }
 
     function resetAnimation() {
+        buddySprite.kmStop();
+
         runningTw.forEach((tw) => {
             tw.cancel();
         });
@@ -351,7 +365,14 @@ k.scene("newEditor", (loadedProject) => {
 
     // #region onUpdate()
     k.onUpdate(() => {
-        // k.debug.log(curFrameIndex);
+        if (curFrameIndex == 0) {
+            uiStartState.hidden = false;
+        }
+        else {
+            uiStartState.hidden = true;
+        }
+
+        animIsPlaying = buddySprite.isPlaying;
     });
     // // #endregion
 });

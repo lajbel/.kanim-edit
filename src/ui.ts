@@ -1,4 +1,4 @@
-import * as K from "kaboom";
+import * as KA from "kaboom";
 import { ReturnLayerCtx } from "./plugins/layer";
 import { GameCtx } from "./types";
 
@@ -6,47 +6,57 @@ import { GameCtx } from "./types";
 export interface KanimUIContext {
     uiBox(): BoxComp;
     uiInputField(this: KanimUIContext): InputFieldComp;
-    uiMakeInputField(this: KanimUIContext, defaultValue: string): K.GameObj<InputFieldComp>;
-    uiAddBox(this: KanimUIContext, width: number, height: number, side: K.Anchor): K.GameObj<BoxComp | K.PosComp>;
+    uiMakeInputField(this: KanimUIContext, defaultValue: string): KA.GameObj<InputFieldComp>;
+    uiAddBox(this: KanimUIContext, width: number, height: number, side: KA.Anchor): KA.GameObj<BoxComp | KA.PosComp>;
 }
 
-interface BoxComp extends K.Comp {
+interface BoxComp extends KA.Comp {
     toggleView(): void;
     addTitle(title: string): void;
-    addElement<T>(title: string, element: K.GameObj<T>): K.GameObj<T>;
+    addElement<T>(title: string, element: KA.GameObj<T>): KA.GameObj<T>;
 }
 
-interface InputFieldComp extends K.Comp {
-    editableText: K.GameObj<any>;
+interface InputFieldComp extends KA.Comp {
+    editableText: KA.GameObj<any>;
 
     onInputSet(action: (v: string) => void): void;
 }
 // #endregion
 
+function calculateSum(array: any[], property: string | number) {
+    const total = array.reduce((accumulator, object) => {
+        return accumulator + object[property];
+    }, 0);
+
+    return total;
+}
+
 // #region Plugin
 export default function kanimUI(k: GameCtx) {
-    function autoAlign(obj, align: string, boxDimensions: K.Vec2) {
+    function autoAlign(obj, align: string, boxDimensions: KA.Vec2) {
         const w = boxDimensions.x;
         const h = boxDimensions.y;
 
+        // TODO: Move boxes if there is another box
         const alignsToVec2 = {
-            "left": k.vec2(0, (k.height() / 2) + (h / 2)),
-            "topleft": k.vec2(0, 0),
-            "botleft": k.vec2(0, k.height() - h),
-            "right": k.vec2(k.width() - w, (k.height() / 2) + (h / 2)),
-            "topright": k.vec2(k.width() - w, 0),
-            "botright": k.vec2(k.width() - w, k.height() - h / 2),
-            "top": k.vec2((k.width() / 2) - (w / 2), 0),
-            "bot": k.vec2((k.width() / 2) - (w / 2), k.height() - h / 2),
+            "left": () => k.vec2(0, (k.height() / 2) + (h / 2)),
+            "topleft": () => k.vec2(0 + calculateSum(k.get("boxtopleft"), "w"), 0),
+            "botleft": () => k.vec2(0, k.height() - h),
+            "right": () => k.vec2(k.width() - w, (k.height() / 2) + (h / 2)),
+            "topright": () => k.vec2(k.width() - w, 0),
+            "botright": () => k.vec2(k.width() - w, k.height() - h / 2),
+            "top": () => k.vec2((k.width() / 2) - (w / 2), 0),
+            "bot": () => k.vec2((k.width() / 2) - (w / 2), k.height() - h / 2),
         };
 
-        obj.pos = alignsToVec2[align];
+        obj.pos = alignsToVec2[align]();
+        obj.use("box" + align);
     }
 
     return {
         // #region Components
         uiBox() {
-            let initPos: K.Vec2;
+            let initPos: KA.Vec2;
             let hidden = false;
 
             return {
@@ -81,7 +91,7 @@ export default function kanimUI(k: GameCtx) {
                         "boxElement",
                     ]);
                 },
-                addElement<T>(this: K.GameObj<unknown>, title: string, element: K.GameObj<T>) {
+                addElement<T>(this: KA.GameObj<unknown>, title: string, element: KA.GameObj<T>) {
                     const quote = this.add([
                         // TODO: hardcoded
                         k.pos(6, 28 + (24 * this.get("boxElement").length)),
@@ -259,7 +269,7 @@ export default function kanimUI(k: GameCtx) {
                 k.fixed(),
                 this.uiInputField(),
                 {
-                    background: null as unknown as K.GameObj<unknown> | undefined,
+                    background: null as unknown as KA.GameObj<unknown> | undefined,
                 }
             ]);
 
@@ -324,6 +334,7 @@ export default function kanimUI(k: GameCtx) {
 
             return inputText;
         },
+
         uiMakeButton(text: string, action: () => void) {
             const button = k.make([
                 k.pos(0),
@@ -348,7 +359,7 @@ export default function kanimUI(k: GameCtx) {
         // #endregion
 
         // #region Adders
-        uiAddBox(width: number, height: number, side: K.Anchor) {
+        uiAddBox(width: number, height: number, side: KA.Anchor) {
             let center = k.vec2(width / 2, height / 2);
 
             const arrows = {
@@ -380,15 +391,21 @@ export default function kanimUI(k: GameCtx) {
                 k.layer("ui"),
                 k.anchor("topleft"),
                 this.uiBox(),
-                { center: center, bg: null! as K.GameObj }
+                {
+                    center: center,
+                    bg: null! as KA.GameObj,
+                }
             ]);
 
             box.bg = box.add([
                 k.fixed(),
                 k.anchor("topleft"),
                 k.rect(width, height),
-                k.outline(4),
+                k.outline(3),
             ]);
+
+            box.w = box.bg.width;
+            box.h = box.bg.height;
 
             autoAlign(box, side, k.vec2(box.bg.width, box.bg.height));
 
